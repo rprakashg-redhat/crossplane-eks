@@ -1,0 +1,72 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: virtualnetworks.stacks.aws.kloudstak.io
+spec:
+  group: stacks.aws.kloudstak.io
+  names:
+    kind: VirtualNetwork
+    plural: virtualnetworks
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              cidr:
+                type: string
+                description: IP Address CIDR block for the virtual network
+              region:
+                type: string
+                description: region to provision the virtual network
+              availabilityZones:
+                type: array
+                description: AWS availability zones for the region specified 
+                items:  
+                  type: string  
+              publicSubnet:
+                type: object
+                properties:
+                  cidr:
+                    type: array
+                    description: cidr blocks to be used for public subnet. One required for each availability zone.
+                    items:
+                      type: string
+                required:
+                - cidr
+              privateSubnet:
+                type: object
+                properties:
+                  cidr:
+                    type: array
+                    description: cidr blocks to be used for private subnet. One required for each availability zone.
+                    items:
+                      type: string
+                required:
+                - cidr            
+              tags:
+                type: array
+                description: tags for this resource
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: tag name
+                    value:
+                      type: string
+                      description: tag value
+                  required:
+                  - key
+                  - value
+            required:
+            - region
+            - cidr
+    served: true
+    referenceable: true
+  claimNames:
+    kind: VirtualNetworkClaim
+    plural: virtualnetworkclaim

@@ -1,0 +1,258 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: aws-virtualnetwork-stack
+spec:
+  mode: Pipeline
+  pipeline:
+  - step: create-resources
+    functionRef:
+      name: function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      kind: GoTemplate
+      source: Inline
+      inline:
+        template: |
+          apiVersion: ec2.aws.upbound.io/v1beta1
+          kind: VPC
+          metadata:
+            name: {{ $.observed.composite.resource.metadata.name }}
+            annotations:
+              meta.upbound.io/example-id: ec2/v1beta1/vpc
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}
+          spec:
+            forProvider:
+              enableDnsHostnames: true
+              region: {{ $.observed.composite.resource.spec.region }}
+              cidrBlock: {{ $.observed.composite.resource.spec.cidr }}
+              tags:
+                Name: {{ $.observed.composite.resource.metadata.name }}
+            providerConfigRef:
+              name: aws-config
+          ---    
+          apiVersion: ec2.aws.upbound.io/v1beta1
+          kind: InternetGateway
+          metadata:
+            name: {{ $.observed.composite.resource.metadata.name }}-igw
+            annotations:
+              meta.upbound.io/example-id: ec2/v1beta1/internetgateway
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-igw  
+          spec:
+            forProvider:
+              region: {{ $.observed.composite.resource.spec.region }}
+              vpcIdRef:
+                name: {{ $.observed.composite.resource.metadata.name }}
+              tags:
+                Name: {{ $.observed.composite.resource.metadata.name }}-igw  
+            providerConfigRef:
+              name: aws-config
+          
+          {{- range $i, $az := $.observed.composite.resource.spec.availabilityZones }}
+          ---
+          apiVersion: ec2.aws.upbound.io/v1beta1
+          kind: Subnet
+          metadata:
+            name: {{ $.observed.composite.resource.metadata.name }}-public-{{ $az }}
+            annotations:
+              meta.upbound.io/example-id: ec2/v1beta1/subnet
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-public-{{ $az }}
+            labels:
+              stacks.aws.kloudstack.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-public-{{ $az }}
+          spec:
+            forProvider:
+              region: {{ $.observed.composite.resource.spec.region }}
+              availabilityZone: {{ $az }}
+              vpcIdRef:
+                name: {{ $.observed.composite.resource.metadata.name }}
+              cidrBlock: {{ index $.observed.composite.resource.spec.publicSubnet.cidr $i }}
+              tags:
+                Name: {{ printf "%s-public-%s" $.observed.composite.resource.metadata.name $az }}
+            providerConfigRef:
+              name: aws-config
+          ---
+          apiVersion: ec2.aws.upbound.io/v1beta1
+          kind: Subnet
+          metadata:
+            name: {{ $.observed.composite.resource.metadata.name }}-private-{{ $az }}
+            annotations:
+              meta.upbound.io/example-id: ec2/v1beta1/subnet
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-private-{{ $az }}
+            labels:
+              stacks.aws.kloudstack.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-private-{{ $az }}
+          spec:
+            forProvider:
+              region: {{ $.observed.composite.resource.spec.region }}
+              availabilityZone: {{ $az }}
+              vpcIdRef:
+                name: {{ $.observed.composite.resource.metadata.name }}
+              cidrBlock: {{ index $.observed.composite.resource.spec.privateSubnet.cidr $i }}
+              tags:
+                Name: {{ printf "%s-private-%s" $.observed.composite.resource.metadata.name $az }}
+            providerConfigRef:
+              name: aws-config
+          {{- end }}
+          ---
+          apiVersion: ec2.aws.upbound.io/v1beta1
+          kind: EIP
+          metadata:
+            name: {{ $.observed.composite.resource.metadata.name }}-nat-eip
+            annotations:
+              meta.upbound.io/example-id: ec2/v1beta1/eip
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-nat-eip
+          spec:
+            forProvider:
+              region: {{ $.observed.composite.resource.spec.region }}
+              vpc: true
+            providerConfigRef:
+              name: aws-config
+          ---
+          apiVersion: ec2.aws.upbound.io/v1beta1
+          kind: NATGateway
+          metadata:
+            name: {{ $.observed.composite.resource.metadata.name }}-nat
+            annotations:
+              meta.upbound.io/example-id: ec2/v1beta1/natgateway
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-nat
+              upjet.upbound.io/manual-intervention: This resource exceeds limit of 8 NAT gateways.
+          spec:
+            forProvider:
+              connectivityType: public
+              region: {{ $.observed.composite.resource.spec.region }}
+              allocationIdRef:
+                name: {{ $.observed.composite.resource.metadata.name }}-nat-eip
+              subnetIdSelector:
+                matchLabels:
+                  stacks.aws.kloudstack.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-public-{{ index $.observed.composite.resource.spec.availabilityZones 0}}
+              tags:
+                Name: {{ $.observed.composite.resource.metadata.name }}-nat
+            providerConfigRef:
+              name: aws-config
+          ---
+          apiVersion: ec2.aws.upbound.io/v1beta1
+          kind: RouteTable
+          metadata:
+            name: {{ $.observed.composite.resource.metadata.name }}-public-rtb 
+            annotations:
+              meta.upbound.io/example-id: ec2/v1beta1/routetable
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-public-rtb
+          spec:
+            forProvider:
+              region: {{ $.observed.composite.resource.spec.region }}
+              vpcIdRef: 
+                name: {{ $.observed.composite.resource.metadata.name }}
+              tags:
+                Name: {{ $.observed.composite.resource.metadata.name }}-public-rtb
+            providerConfigRef:
+              name: aws-config
+          ---
+          apiVersion: ec2.aws.upbound.io/v1beta1
+          kind: RouteTable
+          metadata:
+            name: {{ $.observed.composite.resource.metadata.name }}-private-rtb 
+            annotations:
+              meta.upbound.io/example-id: ec2/v1beta1/routetable
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-private-rtb
+          spec:
+            forProvider:
+              region: {{ $.observed.composite.resource.spec.region }}
+              vpcIdRef: 
+                name: {{ $.observed.composite.resource.metadata.name }}
+              tags:
+                Name: {{ $.observed.composite.resource.metadata.name }}-private-rtb
+            providerConfigRef:
+              name: aws-config
+          ---
+          apiVersion: ec2.aws.upbound.io/v1beta1
+          kind: DefaultRouteTable
+          metadata:
+            annotations:
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-default
+          spec:
+            forProvider:
+              defaultRouteTableIdRef:
+                name: {{ $.observed.composite.resource.metadata.name }}
+              region: {{ $.observed.composite.resource.spec.region }}
+              tags:
+                Name: {{ $.observed.composite.resource.metadata.name }}-default
+            providerConfigRef:
+              name: aws-config
+          ---    
+          apiVersion: ec2.aws.upbound.io/v1beta1
+          kind: Route
+          metadata:
+            name: {{ $.observed.composite.resource.metadata.name }}-public-rtb-internet-route
+            annotations:
+              meta.upbound.io/example-id: ec2/v1beta1/route
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-public-rtb-internet-route
+          spec:
+            forProvider: 
+              destinationCidrBlock: 0.0.0.0/0
+              gatewayIdRef:
+                name: {{ $.observed.composite.resource.metadata.name }}-igw
+              region: {{ $.observed.composite.resource.spec.region }}
+              routeTableIdRef:
+                name: {{ $.observed.composite.resource.metadata.name }}-public-rtb
+            providerConfigRef:
+              name: aws-config
+          ---
+          apiVersion: ec2.aws.upbound.io/v1beta1
+          kind: Route
+          metadata:
+            name: {{ $.observed.composite.resource.metadata.name }}-private-rtb-internet-route
+            annotations:
+              meta.upbound.io/example-id: ec2/v1beta1/route
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-private-rtb-internet-route
+          spec:
+            forProvider: 
+              destinationCidrBlock: 0.0.0.0/0
+              natGatewayIdRef:
+                name: {{ $.observed.composite.resource.metadata.name }}-nat
+              region: {{ $.observed.composite.resource.spec.region }}
+              routeTableIdRef:
+                name: {{ $.observed.composite.resource.metadata.name }}-private-rtb
+            providerConfigRef:
+              name: aws-config
+
+          {{- range $i, $az := $.observed.composite.resource.spec.availabilityZones }}    
+          ---
+          apiVersion: ec2.aws.upbound.io/v1beta1
+          kind: RouteTableAssociation
+          metadata:
+            name: {{ $.observed.composite.resource.metadata.name }}-public-{{ $az }}-rta
+            annotations:
+              meta.upbound.io/example-id: ec2/v1beta1/routetableassociation
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-public-{{ $az }}-rta
+          spec:
+            forProvider:
+              region: {{ $.observed.composite.resource.spec.region }}
+              routeTableIdRef:
+                name: {{ $.observed.composite.resource.metadata.name }}-public-rtb
+              subnetIdSelector:
+                matchLabels:
+                  stacks.aws.kloudstack.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-public-{{ $az }}
+            providerConfigRef:
+              name: aws-config
+          ---
+          apiVersion: ec2.aws.upbound.io/v1beta1
+          kind: RouteTableAssociation
+          metadata:
+            name: {{ $.observed.composite.resource.metadata.name }}-private-{{ $az }}-rta
+            annotations:
+              meta.upbound.io/example-id: ec2/v1beta1/routetableassociation
+              gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-private-{{ $az }}-rta
+          spec:
+            forProvider:
+              region: {{ $.observed.composite.resource.spec.region }}
+              routeTableIdRef:
+                name: {{ $.observed.composite.resource.metadata.name }}-private-rtb
+              subnetIdSelector:
+                matchLabels:
+                  stacks.aws.kloudstack.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-private-{{ $az }}
+            providerConfigRef:
+              name: aws-config
+          {{- end }}
+          
+  compositeTypeRef:
+    apiVersion: stacks.aws.kloudstak.io/v1alpha1
+    kind: VirtualNetwork

@@ -1,0 +1,107 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: eksclusters.stacks.aws.kloudstak.io
+spec:
+  group: stacks.aws.kloudstak.io
+  names:
+    kind: EKSCluster
+    plural: eksclusters
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              region:
+                type: string
+                description: AWS region this cluster should be provisioned
+              version:
+                type: string
+                description: Cluster version
+              compute:
+                type: object
+                description: compute specific configurations
+                properties:
+                  nodeGroups:
+                    type: array 
+                    description: node groups
+                    items: 
+                      type: object
+                      properties: 
+                        name:
+                          type: string
+                          description: node group name
+                        instanceType:
+                          type: string
+                          description: instance type
+                        scaling:
+                          type: object
+                          description: scaling config
+                          properties:
+                            desiredSize:
+                              type: integer
+                              description: desired size
+                              default: 1
+                            maxSize:
+                              type: integer
+                              description: max size
+                              default: 1
+                            minSize:
+                              type: integer
+                              description: min size
+                              default: 1
+                          required:
+                          - desiredSize
+                          - maxSize
+                          - minSize
+                      required:
+                      - name
+                      - instanceType
+              availabilityZones:
+                type: array
+                description: avaiability zones
+                items:
+                  type: string
+              networking:
+                type: object
+                description: networking settings
+                properties:
+                  name:
+                    type: string
+                    description: virtual network name
+                  cidr:
+                    type: string
+                    description: cidr block to be used for virtual network
+                  publicSubnet:
+                    type: object
+                    properties:
+                      cidr:
+                        type: array
+                        description: cidr blocks to be used for public subnet. One required for each availability zone.
+                        items:
+                          type: string
+                    required:
+                    - cidr
+                  privateSubnet:
+                    type: object
+                    properties:
+                      cidr:
+                        type: array
+                        description: cidr blocks to be used for private subnet. One required for each availability zone.
+                        items:
+                          type: string
+                    required:
+                    - cidr     
+            required:
+            - region
+            - version
+
+    served: true
+    referenceable: true
+  claimNames:
+    kind: EKSClusterClaim
+    plural: eksclusterclaim
