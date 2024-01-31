@@ -58,7 +58,7 @@ spec:
               meta.upbound.io/example-id: ec2/v1beta1/subnet
               gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-public-{{ $az }}
             labels:
-              stacks.aws.kloudstack.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-public-{{ $az }}
+              stacks.aws.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-public-{{ $az }}
           spec:
             forProvider:
               region: {{ $.observed.composite.resource.spec.region }}
@@ -79,7 +79,7 @@ spec:
               meta.upbound.io/example-id: ec2/v1beta1/subnet
               gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-private-{{ $az }}
             labels:
-              stacks.aws.kloudstack.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-private-{{ $az }}
+              stacks.aws.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-private-{{ $az }}
           spec:
             forProvider:
               region: {{ $.observed.composite.resource.spec.region }}
@@ -123,7 +123,7 @@ spec:
                 name: {{ $.observed.composite.resource.metadata.name }}-nat-eip
               subnetIdSelector:
                 matchLabels:
-                  stacks.aws.kloudstack.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-public-{{ index $.observed.composite.resource.spec.availabilityZones 0}}
+                  stacks.aws.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-public-{{ index $.observed.composite.resource.spec.availabilityZones 0}}
               tags:
                 Name: {{ $.observed.composite.resource.metadata.name }}-nat
             providerConfigRef:
@@ -230,7 +230,7 @@ spec:
                 name: {{ $.observed.composite.resource.metadata.name }}-public-rtb
               subnetIdSelector:
                 matchLabels:
-                  stacks.aws.kloudstack.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-public-{{ $az }}
+                  stacks.aws.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-public-{{ $az }}
             providerConfigRef:
               name: aws-config
           ---
@@ -248,11 +248,11 @@ spec:
                 name: {{ $.observed.composite.resource.metadata.name }}-private-rtb
               subnetIdSelector:
                 matchLabels:
-                  stacks.aws.kloudstack.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-private-{{ $az }}
+                  stacks.aws.io/subnet-name: {{ $.observed.composite.resource.metadata.name }}-private-{{ $az }}
             providerConfigRef:
               name: aws-config
           {{- end }}
           
   compositeTypeRef:
-    apiVersion: stacks.aws.kloudstak.io/v1alpha1
+    apiVersion: stacks.aws.io/v1alpha1
     kind: VirtualNetwork

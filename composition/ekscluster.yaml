@@ -14,7 +14,7 @@ spec:
       source: Inline
       inline:
         template: |
-          apiVersion: stacks.aws.kloudstak.io/v1alpha1
+          apiVersion: stacks.aws.io/v1alpha1
           kind: VirtualNetwork
           metadata:
             name: {{ $.observed.composite.resource.spec.networking.name }}
@@ -47,7 +47,7 @@ spec:
               gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}
             name: 
             labels:
-              eksclusters.stacks.aws.kloudstack.io/cluster-name: {{ $.observed.composite.resource.metadata.name }}
+              eksclusters.stacks.aws.io/cluster-name: {{ $.observed.composite.resource.metadata.name }}
           spec:
             forProvider:
               enabledClusterLogTypes:
@@ -59,7 +59,7 @@ spec:
               region: {{ $.observed.composite.resource.spec.region }}
               roleArnSelector:
                 matchLabels:
-                  eksclusters.stacks.aws.kloudstack.io/cluster-role: {{ $.observed.composite.resource.metadata.name }}-role
+                  eksclusters.stacks.aws.io/cluster-role: {{ $.observed.composite.resource.metadata.name }}-role
               vpcConfig:
               - subnetIdRefs:
               {{- range $az := $.observed.composite.resource.spec.availabilityZones }}
@@ -80,7 +80,7 @@ spec:
               region: {{ $.observed.composite.resource.spec.region }}
               clusterNameSelector:
                 matchLabels:
-                  eksclusters.stacks.aws.kloudstack.io/cluster-name: {{ $.observed.composite.resource.metadata.name }}
+                  eksclusters.stacks.aws.io/cluster-name: {{ $.observed.composite.resource.metadata.name }}
             writeConnectionSecretToRef:
               name: {{ $.observed.composite.resource.metadata.name }}-kubeconfig
               namespace: crossplane-system
@@ -95,7 +95,7 @@ spec:
               meta.upbound.io/example-id: iam/v1beta1/Role
               gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-role
             labels:
-              eksclusters.stacks.aws.kloudstack.io/cluster-role: {{ $.observed.composite.resource.metadata.name }}-role
+              eksclusters.stacks.aws.io/cluster-role: {{ $.observed.composite.resource.metadata.name }}-role
           spec:
             forProvider:
               assumeRolePolicy: |
@@ -126,7 +126,7 @@ spec:
               policyArn: arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
               roleSelector:
                 matchLabels:
-                  eksclusters.stacks.aws.kloudstack.io/cluster-role: {{ $.observed.composite.resource.metadata.name }}-role
+                  eksclusters.stacks.aws.io/cluster-role: {{ $.observed.composite.resource.metadata.name }}-role
             providerConfigRef:
               name: aws-config
           {{- range $i, $group := $.observed.composite.resource.spec.compute.nodeGroups }}
@@ -143,10 +143,10 @@ spec:
               region: {{ $.observed.composite.resource.spec.region }}
               clusterNameSelector:
                 matchLabels:
-                  eksclusters.stacks.aws.kloudstack.io/cluster-name: {{ $.observed.composite.resource.metadata.name }}
+                  eksclusters.stacks.aws.io/cluster-name: {{ $.observed.composite.resource.metadata.name }}
               nodeRoleArnSelector:
                 matchLabels:
-                  eksclusters.stacks.aws.kloudstack.io/node-role: {{ $.observed.composite.resource.metadata.name }}-{{ $group.name }}-role
+                  eksclusters.stacks.aws.io/node-role: {{ $.observed.composite.resource.metadata.name }}-{{ $group.name }}-role
               subnetIdRefs:
               {{- range $i, $az := $.observed.composite.resource.spec.availabilityZones }}
               - name: {{ $.observed.composite.resource.spec.networking.name}}-private-{{ $az }}
@@ -166,7 +166,7 @@ spec:
               meta.upbound.io/example-id: iam/v1beta1/Role
               gotemplating.fn.crossplane.io/composition-resource-name: {{ $.observed.composite.resource.metadata.name }}-{{ $group.name }}-role
             labels:
-              eksclusters.stacks.aws.kloudstack.io/node-role: {{ $.observed.composite.resource.metadata.name }}-{{ $group.name }}-role 
+              eksclusters.stacks.aws.io/node-role: {{ $.observed.composite.resource.metadata.name }}-{{ $group.name }}-role 
           spec:
             forProvider:
               assumeRolePolicy: |
@@ -197,7 +197,7 @@ spec:
               policyArn: arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
               roleSelector:
                 matchLabels:
-                  eksclusters.stacks.aws.kloudstack.io/node-role: {{ $.observed.composite.resource.metadata.name }}-{{ $group.name }}-role
+                  eksclusters.stacks.aws.io/node-role: {{ $.observed.composite.resource.metadata.name }}-{{ $group.name }}-role
             providerConfigRef:
               name: aws-config
           ---
@@ -213,7 +213,7 @@ spec:
               policyArn: arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
               roleSelector:
                 matchLabels:
-                  eksclusters.stacks.aws.kloudstack.io/node-role: {{ $.observed.composite.resource.metadata.name }}-{{ $group.name }}-role
+                  eksclusters.stacks.aws.io/node-role: {{ $.observed.composite.resource.metadata.name }}-{{ $group.name }}-role
             providerConfigRef:
               name: aws-config
           ---
@@ -229,12 +229,12 @@ spec:
               policyArn: arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
               roleSelector:
                 matchLabels:
-                  eksclusters.stacks.aws.kloudstack.io/node-role: {{ $.observed.composite.resource.metadata.name }}-{{ $group.name }}-role
+                  eksclusters.stacks.aws.io/node-role: {{ $.observed.composite.resource.metadata.name }}-{{ $group.name }}-role
             providerConfigRef:
               name: aws-config
           
           {{- end }}
 
   compositeTypeRef:
-    apiVersion: stacks.aws.kloudstak.io/v1alpha1
+    apiVersion: stacks.aws.io/v1alpha1
     kind: EKSCluster

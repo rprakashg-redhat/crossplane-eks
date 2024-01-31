@@ -1,9 +1,9 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: CompositeResourceDefinition
 metadata:
-  name: eksclusters.stacks.aws.kloudstak.io
+  name: eksclusters.stacks.aws.io
 spec:
-  group: stacks.aws.kloudstak.io
+  group: stacks.aws.io
   names:
     kind: EKSCluster
     plural: eksclusters
